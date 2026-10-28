@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riverside General Hospital | Patient Portal</title>
+  <style>
+    /* patient portal - built with WCAG 2.1 AA in mind:
+       - colour contrast at least 4.5:1 for body text
+       - visible focus outlines
+       - labels for every form field, errors tied to inputs
+       - skip link, landmarks, and a live region for status messages
+       - text resizes without breaking the layout */
+    :root {
+      --navy: #13315c;
+      --navy-dark: #0c2140;
+      --text: #1a1a1a;
+      --muted: #4a4a4a;
+      --border: #8a8f98;
+      --bg: #ffffff;
+      --soft: #f2f5f9;
+      --error: #a11d1d;
+      --ok: #1e6b3a;
+      --focus: #ffbf00;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    a { color: #0b4a8c; }
+    a:hover { color: var(--navy-dark); }
+
+    /* focus indicator, big and high contrast */
+    :focus-visible {
+      outline: 4px solid var(--focus);
+      outline-offset: 2px;
+      box-shadow: 0 0 0 2px var(--navy-dark);
+    }
+
+    .skip-link {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: #fff;
+      color: var(--navy-dark);
+      padding: 10px 16px;
+      font-weight: bold;
+      z-index: 100;
+    }
+    .skip-link:focus { left: 10px; top: 10px; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+
+    /* header */
+    .site-header {
+      background: var(--navy);
+      color: #fff;
+    }
+    .site-header .inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 16px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .site-title { font-size: 1.35rem; font-weight: bold; color: #fff; text-decoration: none; }
+    .site-title:hover { color: #dce6f5; }
+    .site-header nav ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 18px;
+      margin: 0;
+      padding: 0;
+    }
+    .site-header nav a {
+      color: #fff;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .site-header nav a[aria-current="page"] {
+      text-decoration: none;
+      background: #fff;
+      color: var(--navy);
+      padding: 2px 8px;
+      border-radius: 3px;
+    }
+
+    /* main */
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 20px 50px;
+    }
+    h1 { font-size: 1.9rem; margin: 0 0 6px; color: var(--navy-dark); }
+    h2 { font-size: 1.4rem; color: var(--navy-dark); margin: 0 0 12px; }
+    h3 { font-size: 1.15rem; margin: 0 0 8px; color: var(--navy-dark); }
+
+    .intro { color: var(--muted); margin-bottom: 26px; }
+
+    section.block {
+      border: 1px solid #c9d1dc;
+      border-radius: 6px;
+      padding: 22px;
+      margin-bottom: 26px;
+      background: #fff;
+    }
+
+    /* status messages */
+    .status {
+      padding: 12px 16px;
+      border-radius: 4px;
+      margin-bottom: 18px;
+      border: 1px solid transparent;
+    }
+    .status.success { background: #e6f4ea; border-color: var(--ok); color: var(--ok); }
+    .status.info { background: #e8f0fb; border-color: #0b4a8c; color: #0b4a8c; }
+
+    /* forms */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 20px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+
+    .field label,
+    fieldset legend {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    .hint {
+      display: block;
+      font-size: 0.92rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .field input[type="text"],
+    .field input[type="email"],
+    .field input[type="tel"],
+    .field input[type="date"],
+    .field select,
+    .field textarea {
+      width: 100%;
+      font: inherit;
+      padding: 10px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      color: var(--text);
+    }
+    .field input[aria-invalid="true"] {
+      border-color: var(--error);
+    }
+    .error-msg {
+      color: var(--error);
+      font-weight: bold;
+      font-size: 0.95rem;
+      display: block;
+      margin-top: 4px;
+    }
+
+    fieldset.choices {
+      border: none;
+      padding: 0;
+      margin: 0;
+    }
+    .choice {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+    }
+    .choice input { width: 20px; height: 20px; }
+
+    .btn {
+      display: inline-block;
+      background: var(--navy);
+      color: #fff;
+      border: 2px solid var(--navy);
+      padding: 12px 22px;
+      font: inherit;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .btn:hover { background: var(--navy-dark); border-color: var(--navy-dark); color: #fff; }
+    .btn.secondary {
+      background: #fff;
+      color: var(--navy);
+    }
+    .btn.secondary:hover { background: var(--soft); color: var(--navy-dark); }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+
+    /* tables (lab results, history) */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.97rem;
+    }
+    caption {
+      text-align: left;
+      font-weight: bold;
+      padding: 6px 0 10px;
+      color: var(--navy-dark);
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid #c9d1dc;
+      padding: 10px 8px;
+      vertical-align: top;
+    }
+    thead th {
+      background: var(--soft);
+      border-bottom: 2px solid var(--navy);
+    }
+    .flag-high { color: var(--error); font-weight: bold; }
+    .flag-normal { color: var(--ok); font-weight: bold; }
+    .table-wrap { overflow-x: auto; }
+
+    /* tabs for the portal sections, plain sections on small screens */
+    .tab-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      border-bottom: 2px solid #c9d1dc;
+      margin-bottom: 20px;
+    }
+    .tab-list a {
+      padding: 10px 16px;
+      text-decoration: none;
+      color: var(--navy);
+      border: 2px solid transparent;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      font-weight: bold;
+    }
+    .tab-list a[aria-current="true"] {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .timeline {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .timeline li {
+      border-left: 4px solid var(--navy);
+      padding: 6px 0 14px 16px;
+      margin-left: 6px;
+    }
+    .timeline time { font-weight: bold; display: block; color: var(--navy-dark); }
+
+    .emergency {
+      background: #fff4f4;
+      border: 2px solid var(--error);
+      padding: 14px 18px;
+      border-radius: 4px;
+      margin-bottom: 26px;
+    }
+    .emergency strong { color: var(--error); }
+
+    footer.site-footer {
+      background: var(--soft);
+      border-top: 1px solid #c9d1dc;
+      padding: 22px 20px;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+    footer.site-footer .inner { max-width: 1100px; margin: 0 auto; }
+
+    @media (max-width: 720px) {
+      .form-grid { grid-template-columns: 1fr; }
+      h1 { font-size: 1.6rem; }
+      body { font-size: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="site-header">
+  <div class="inner">
+    <a class="site-title" href="index.html">Riverside General Hospital</a>
+    <nav aria-label="Patient portal">
+      <ul>
+        <li><a href="index.html" aria-current="page">Home</a></li>
+        <li><a href="#book">Book appointment</a></li>
+        <li><a href="#labs">Lab reports</a></li>
+        <li><a href="#history">Medical history</a></li>
+        <li><a href="#">Sign out</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+
+  <h1>Welcome to your patient portal</h1>
+  <p class="intro">Signed in as <strong>Mrs. Abimbola Johnson</strong> · Patient ID RGH-20481</p>
+
+  <div class="emergency" role="note" aria-label="Emergency notice">
+    <strong>Medical emergency?</strong> Do not use this portal. Call <strong>112</strong> or go to the nearest Accident &amp; Emergency unit.
+  </div>
+
+  <div class="status info" role="status" id="live-status">
+    You have 1 upcoming appointment and 1 new lab report.
+  </div>
+
+  <nav class="tab-list" aria-label="Portal sections">
+    <a href="#book">Book appointment</a>
+    <a href="#labs">Lab reports</a>
+    <a href="#history">Medical history</a>
+  </nav>
+
+  <section class="block" aria-labelledby="next-title">
+    <h2 id="next-title">Your next appointment</h2>
+    <p><strong>Cardiology follow-up</strong> with Dr. Ibrahim Musa</p>
+    <p>Thursday 29 October 2026, 10:30am<br>Clinic 4B, Ground floor, Block C</p>
+    <div class="btn-row">
+      <a class="btn secondary" href="#book">Reschedule</a>
+      <button class="btn secondary" type="button">Cancel appointment</button>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="latest-title">
+    <h2 id="latest-title">Latest lab result</h2>
+    <p>Full blood count, collected 20 October 2026. Released 22 October 2026.</p>
+    <p><a href="#labs">View full report</a></p>
+  </section>
+
+  <!-- BOOK APPOINTMENT -->
+  <section class="block" id="book" aria-labelledby="book-title">
+    <h2 id="book-title">Book an appointment</h2>
+    <p class="intro">Fields marked with an asterisk (*) are required.</p>
+
+    <form action="#" method="post" novalidate id="booking-form">
+      <div class="form-grid">
+
+        <div class="field">
+          <label for="clinic">Clinic or department *</label>
+          <select id="clinic" name="clinic" required aria-describedby="clinic-err">
+            <option value="">Choose a clinic</option>
+            <option>General Practice</option>
+            <option>Cardiology</option>
+            <option>Endocrinology</option>
+            <option>Dermatology</option>
+            <option>Physiotherapy</option>
+          </select>
+          <span id="clinic-err" class="error-msg" hidden>Please choose a clinic.</span>
+        </div>
+
+        <div class="field">
+          <label for="doctor">Preferred doctor</label>
+          <select id="doctor" name="doctor">
+            <option value="">No preference</option>
+            <option>Dr. Ibrahim Musa</option>
+            <option>Dr. Chidinma Okoro</option>
+            <option>Dr. Femi Adeniran</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="appt-date">Preferred date *</label>
+          <span class="hint" id="date-hint">Weekdays only, between 8am and 4pm.</span>
+          <input type="date" id="appt-date" name="date" required aria-describedby="date-hint date-err">
+          <span id="date-err" class="error-msg" hidden>Please choose a date.</span>
+        </div>
+
+        <div class="field">
+          <label for="appt-time">Preferred time *</label>
+          <select id="appt-time" name="time" required>
+            <option value="">Choose a time</option>
+            <option>08:30</option>
+            <option>09:30</option>
+            <option>10:30</option>
+            <option>12:00</option>
+            <option>14:00</option>
+            <option>15:30</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label for="reason">Reason for visit *</label>
+          <span class="hint">A few words is fine, for example "chest pain review".</span>
+          <textarea id="reason" name="reason" rows="3" required></textarea>
+        </div>
+
+        <fieldset class="full choices">
+          <legend>Is this your first visit to this clinic?</legend>
+          <div class="choice">
+            <input type="radio" id="first-yes" name="first" value="yes">
+            <label for="first-yes" style="display:inline;margin:0;">Yes</label>
+          </div>
+          <div class="choice">
+            <input type="radio" id="first-no" name="first" value="no" checked>
+            <label for="first-no" style="display:inline;margin:0;">No</label>
+          </div>
+        </fieldset>
+
+      </div>
+
+      <div class="btn-row">
+        <button class="btn" type="submit">Request appointment</button>
+        <button class="btn secondary" type="reset">Clear form</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- LAB REPORTS -->
+  <section class="block" id="labs" aria-labelledby="labs-title">
+    <h2 id="labs-title">Lab reports</h2>
+
+    <div class="table-wrap">
+      <table>
+        <caption>Results for the last three tests</caption>
+        <thead>
+          <tr>
+            <th scope="col">Test</th>
+            <th scope="col">Date collected</th>
+            <th scope="col">Result</th>
+            <th scope="col">Normal range</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">Full blood count (haemoglobin)</th>
+            <td>20 Oct 2026</td>
+            <td>11.8 g/dL</td>
+            <td>12.0 to 15.5 g/dL</td>
+            <td><span class="flag-high">Low</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Fasting blood sugar</th>
+            <td>20 Oct 2026</td>
+            <td>5.1 mmol/L</td>
+            <td>3.9 to 5.5 mmol/L</td>
+            <td><span class="flag-normal">Normal</span></td>
+          </tr>
+          <tr>
+            <th scope="row">Lipid profile (LDL)</th>
+            <td>02 Sep 2026</td>
+            <td>3.4 mmol/L</td>
+            <td>Under 3.0 mmol/L</td>
+            <td><span class="flag-high">High</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="hint" style="margin-top:12px;">Your doctor will explain these results at your next visit. If you have questions before then, message the clinic.</p>
+  </section>
+
+  <!-- MEDICAL HISTORY -->
+  <section class="block" id="history" aria-labelledby="history-title">
+    <h2 id="history-title">Medical history</h2>
+
+    <h3>Conditions</h3>
+    <ul>
+      <li>Hypertension (diagnosed 2019), on daily medication</li>
+      <li>Type 2 diabetes (diagnosed 2021), managed with diet and metformin</li>
+    </ul>
+
+    <h3>Allergies</h3>
+    <p>Penicillin (rash).</p>
+
+    <h3>Visit timeline</h3>
+    <ol class="timeline">
+      <li>
+        <time datetime="2026-09-02">2 September 2026</time>
+        Routine check-up with Dr. Chidinma Okoro. Blood pressure 138/88.
+      </li>
+      <li>
+        <time datetime="2026-07-14">14 July 2026</time>
+        Physiotherapy review for lower back pain. Exercise plan given.
+      </li>
+      <li>
+        <time datetime="2026-03-10">10 March 2026</time>
+        Dermatology visit for a skin rash. Cream prescribed.
+      </li>
+    </ol>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="inner">
+    <p>Riverside General Hospital, 8 Hospital Road, Ikeja, Lagos. Helpline: <a href="tel:+2348000000000">+234 800 000 0000</a></p>
+    <p>Problems using this portal? Email <a href="mailto:portal@riversidegh.ng">portal@riversidegh.ng</a>.
+      <a href="#">Accessibility statement</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
